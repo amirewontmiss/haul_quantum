@@ -1,0 +1,36 @@
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10, 3.11]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: \${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest flake8 black isort mypy pre-commit
+      - name: Black formatting check
+        run: black --check .
+      - name: isort import sort check
+        run: isort --check-only .
+      - name: Run flake8
+        run: flake8 haul_quantum tests
+      - name: Run mypy
+        run: mypy haul_quantum
+      - name: Run pytest
+        run: pytest --maxfail=1 --disable-warnings -q
