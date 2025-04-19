@@ -4,18 +4,18 @@ from setuptools import find_packages, setup
 
 # Read the long description from README.md
 this_dir = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(this_dir, "docs", "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(
     name="haul_quantum",
-    version="0.1.0",
+    version="0.1.1",
     description="Haul Quantum AI Framework: a next-gen hybrid quantum-classical ML library",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Your Name",
-    author_email="you@example.com",
-    url="https://github.com/yourusername/haul_quantum",
+    author="Amire Ramazan",
+    author_email="amireramazan0809@gmail.com",
+    url="https://github.com/amirewontmiss/haul_quantum",
     packages=find_packages(where="."),
     install_requires=[
         "numpy>=1.20",
@@ -31,8 +31,8 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     project_urls={
-        "Documentation": "https://github.com/yourusername/haul_quantum#readme",
-        "Source": "https://github.com/yourusername/haul_quantum",
-        "Tracker": "https://github.com/yourusername/haul_quantum/issues",
+        "Documentation": "https://github.com/amirewontmiss/haul_quantum#readme",
+        "Source": "https://github.com/amirewontmiss/haul_quantum",
+        "Tracker": "https://github.com/amirewontmiss/haul_quantum/issues",
     },
 )
