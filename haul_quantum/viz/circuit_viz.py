@@ -1,19 +1,8 @@
-"""
-haul_quantum.viz.circuit_viz
-=============================
-Visualization tools for QuantumCircuit objects.
-
-Functions:
-- draw_ascii(circuit): ASCII-art representation.
-- plot_circuit(circuit): Matplotlib wire- and gate-diagram.
-"""
-
 from __future__ import annotations
 
 from typing import Tuple
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 from ..core.circuit import QuantumCircuit
 

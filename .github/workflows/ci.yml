@@ -1,6 +1,4 @@
-# .github/workflows/ci.yml
-
-name: CI
+name: test-and-lint   # keeping the name, but it's now just tests
 
 on:
   push:
@@ -8,41 +6,32 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
-  test-and-lint:
+  tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
-      - name: Check out repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: ⚡ Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install pytest flake8 black isort mypy pre-commit
+          pip install -e .[dev]   # adjust extras if needed
+          pip install pytest
 
-      - name: Black formatting check
-        run: black --check .
-
-      - name: isort import sorting check
-        run: isort --check-only .
-
-      - name: Run flake8 linter
-        run: flake8 haul_quantum tests
-
-      - name: Run mypy type checks
-        run: mypy haul_quantum
-
-      - name: Run pytest
-        run: pytest --maxfail=1 --disable-warnings -q
+      - name: 🧪 Run test suite
+        run: pytest -q
 

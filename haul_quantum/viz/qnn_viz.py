@@ -1,22 +1,9 @@
-"""
-haul_quantum.viz.qnn_viz
-=========================
-Visualization for QNN architectures and training.
-Functions:
-- plot_vqc_architecture(n_qubits, n_layers)
-- plot_training_loss(loss_history)
-- plot_bloch_sphere(state_vector)
-"""
-
 from __future__ import annotations
 
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-# for Bloch sphere
-from mpl_toolkits.mplot3d import Axes3D
 
 
 def plot_vqc_architecture(

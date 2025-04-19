@@ -1,79 +1,29 @@
 """
-haul_quantum.sim.batch
-======================
-Batch (shot-based) simulator with noise integration.
-
-Runs multiple trajectories of a QuantumCircuit under a given NoiseModel,
-then measures the final state in the computational basis to build a histogram.
+Shot-based sampling simulator.
 """
 
 from __future__ import annotations
 
-from typing import Dict, Sequence
+from typing import Dict
 
 import numpy as np
 
 from ..core.circuit import QuantumCircuit
-from ..core.gates import Gate
-from .noise import NoiseModel
-from .statevector import StatevectorSimulator
+from ..sim.noise import NoiseModel
+from ..sim.statevector import StatevectorSimulator
 
 
 class BatchSimulator:
-    def __init__(self, n_qubits: int, seed: int | None = None) -> None:
-        """
-        :param n_qubits: number of qubits in the circuit
-        :param seed: optional RNG seed for reproducibility
-        """
-        if n_qubits <= 0:
-            raise ValueError("n_qubits must be positive")
-        self.n_qubits = n_qubits
-        self.sim = StatevectorSimulator(n_qubits)
-        self.noise = NoiseModel(n_qubits, seed)
-        self.rng = np.random.default_rng(seed)
+    def __init__(self, n_qubits: int, seed: int | None = None):
+        self.sv_sim = StatevectorSimulator(n_qubits, seed=seed)
+        self.noise = NoiseModel(n_qubits, seed=seed)
 
-    def run(
-        self,
-        circuit: QuantumCircuit,
-        shots: int = 1024,
-        noise_params: Dict[str, Dict[int, float]] | None = None,
-    ) -> Dict[str, int]:
-        """
-        Execute `shots` trajectories of `circuit` with optional noise, then measure.
-
-        :param circuit: QuantumCircuit to simulate
-        :param shots: number of repeated runs
-        :param noise_params:
-            mapping from noise-method name (e.g. "depolarizing", "bit_flip")
-            → dict mapping qubit index → probability.
-            e.g. {"depolarizing": {0:0.01, 1:0.02}, "bit_flip": {0:0.005}}
-        :returns: histogram mapping bit-string → count
-        """
+    def run(self, circuit: QuantumCircuit, shots: int = 1024) -> Dict[str, int]:
+        state = self.sv_sim.simulate(circuit.instructions)
+        probs = np.abs(state) ** 2
+        outcomes = np.random.default_rng().choice(len(probs), size=shots, p=probs)
         hist: Dict[str, int] = {}
-
-        for _ in range(shots):
-            # start in |0…0>
-            state = self.sim.zero_state()
-
-            # apply each gate + noise
-            for gate, qubits in circuit.instructions:
-                state = self.sim.apply_gate(state, gate, qubits)
-
-                if noise_params:
-                    # for each noise channel
-                    for channel_name, p_map in noise_params.items():
-                        channel = getattr(self.noise, channel_name, None)
-                        if channel is None:
-                            raise ValueError(f"Unknown noise channel '{channel_name}'")
-                        # apply to each qubit that has a p configured
-                        for q, p in p_map.items():
-                            if q in qubits and p > 0:
-                                state = channel(state, p, q)
-
-            # measure once
-            probs = np.abs(state) ** 2
-            idx = self.rng.choice(len(probs), p=probs)
-            bitstr = format(idx, f"0{self.n_qubits}b")
-            hist[bitstr] = hist.get(bitstr, 0) + 1
-
+        for idx in outcomes:
+            bitstring = format(idx, f"0{circuit.n_qubits}b")[::-1]
+            hist[bitstring] = hist.get(bitstring, 0) + 1
         return hist

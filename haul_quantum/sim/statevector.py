@@ -1,90 +1,60 @@
 """
-haul_quantum.sim.statevector
-============================
-Statevector simulator for Haul Quantum AI framework.
-
-Provides:
- - StatevectorSimulator: initialize |0…0> or custom state
- - apply_gate: apply any Gate to the full statevector
- - simulate: run a list of (Gate, qubits) instructions
+Statevector simulator (dense, CPU).
 """
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
-
 import numpy as np
+from numpy.typing import NDArray
 
-from haul_quantum.core.gates import Gate
+from ..core.gates import Gate
 
 
 class StatevectorSimulator:
-    def __init__(self, n_qubits: int):
-        if n_qubits <= 0:
-            raise ValueError("Number of qubits must be positive")
+    def __init__(self, n_qubits: int, seed: int | None = None):
         self.n_qubits = n_qubits
-        self.dim = 2**n_qubits
+        self.rng_seed = seed
 
-    def zero_state(self) -> np.ndarray:
-        """Return the |0…0> statevector."""
-        state = np.zeros(self.dim, dtype=complex)
+    # ── helpers ── #
+    def zero_state(self) -> NDArray[np.complex128]:
+        state = np.zeros(2**self.n_qubits, dtype=complex)
         state[0] = 1.0
         return state
 
-    def simulate(
+    def apply_gate(
         self,
-        instructions: Sequence[Tuple[Gate, Sequence[int]]],
-        initial_state: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
-        """
-        Apply all gates in sequence and return the final statevector.
+        state: NDArray[np.complex128],
+        gate: Gate,
+        qubits: tuple[int, ...],
+    ) -> NDArray[np.complex128]:
+        """Apply 1- or contiguous 2-qubit *gate* (qubit-0 = LSB)."""
+        if gate.num_qubits == 1:
+            mats = [np.eye(2) for _ in range(self.n_qubits)]
+            mats[qubits[0]] = gate.matrix
+            full = mats[-1]
+            for m in reversed(mats[:-1]):
+                full = np.kron(full, m)
+            return full @ state
 
-        :param instructions: list of (Gate, qubit indices) tuples
-        :param initial_state: optional custom statevector (shape 2**n)
-        """
-        state = (
-            initial_state.astype(complex, copy=True)
-            if initial_state is not None
-            else self.zero_state()
-        )
+        q_low, q_high = min(qubits), max(qubits)
+        if q_high != q_low + 1:
+            raise NotImplementedError("non-contiguous 2-qubit gates not supported")
+
+        mats = [np.eye(2) for _ in range(self.n_qubits)]
+        mats[q_high] = gate.matrix.reshape(2, 2, 2, 2)
+        mats[q_low] = None  # marker
+
+        full = None
+        for idx in reversed(range(self.n_qubits)):
+            if mats[idx] is None:
+                continue
+            block = mats[idx] if mats[idx].shape == (2, 2) else mats[idx].reshape(4, 4)
+            full = block if full is None else np.kron(full, block)
+        return full @ state
+
+    # ── public API ── #
+    def simulate(self, instructions):
+        state = self.zero_state()
         for gate, qubits in instructions:
             state = self.apply_gate(state, gate, qubits)
         return state
-
-    def apply_gate(
-        self, state: np.ndarray, gate: Gate, qubits: Sequence[int]
-    ) -> np.ndarray:
-        """Dispatch to single- or two-qubit apply routines."""
-        if gate.num_qubits == 1:
-            return self._apply_single(state, gate.matrix, qubits[0])
-        elif gate.num_qubits == 2:
-            return self._apply_two(state, gate.matrix, qubits)
-        else:
-            raise NotImplementedError(f"{gate.num_qubits}-qubit gates not supported")
-
-    def _apply_single(
-        self, state: np.ndarray, mat: np.ndarray, target: int
-    ) -> np.ndarray:
-        # Build full operator by kron’ing across all qubits
-        op = 1.0
-        for idx in range(self.n_qubits - 1, -1, -1):
-            op = np.kron(op, mat if idx == target else np.eye(2, dtype=complex))
-        return op @ state
-
-    def _apply_two(
-        self, state: np.ndarray, mat: np.ndarray, qubits: Sequence[int]
-    ) -> np.ndarray:
-        q0, q1 = qubits
-        if q0 == q1:
-            raise ValueError("Two-qubit gate requires distinct qubits")
-        # reshape to rank-n tensor
-        tensor = state.reshape((2,) * self.n_qubits)
-        # bring our qubits to the end
-        axes = [i for i in range(self.n_qubits) if i not in qubits] + list(qubits)
-        tensor = np.transpose(tensor, axes).reshape(-1, 4)
-        # apply gate on last two indices
-        tensor = tensor @ mat.T
-        # reshape back and invert transpose
-        tensor = tensor.reshape((2,) * self.n_qubits)
-        inverse_axes = np.argsort(axes)
-        return np.transpose(tensor, inverse_axes).reshape(-1)

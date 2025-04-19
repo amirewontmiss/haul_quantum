@@ -1,7 +1,6 @@
 import numpy as np
 
 from haul_quantum.core.circuit import QuantumCircuit
-from haul_quantum.core.gates import CNOT, H
 from haul_quantum.sim.statevector import StatevectorSimulator
 
 

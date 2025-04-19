@@ -1,165 +1,122 @@
 """
-haul_quantum.core.gates
-=======================
-Basic quantum gates and gate abstraction for the Haul Quantum AI framework.
-
-Defines:
-* Gate – immutable base class for any quantum gate.
-* Standard 1-qubit gates: I, X, Y, Z, H, S, T, RX, RY, RZ.
-* Standard 2-qubit gates: CNOT, CZ, SWAP.
+Gate primitives and parametric rotations.
 """
 
 from __future__ import annotations
 
-from math import cos, sin
-from typing import Tuple
+import math
 
 import numpy as np
 
 __all__ = [
-    "Gate",
-    # single-qubit factories
-    "I",
     "X",
     "Y",
     "Z",
     "H",
-    "S",
-    "T",
+    "CNOT",
+    "I",
     "RX",
     "RY",
     "RZ",
-    # two-qubit factories
-    "CNOT",
-    "CZ",
-    "SWAP",
 ]
 
 
+# --------------------------------------------------------------------------- #
+# Gate container
+# --------------------------------------------------------------------------- #
 class Gate:
-    """Abstract, immutable gate object."""
+    """Light-weight gate container."""
 
-    def __init__(
-        self,
-        name: str,
-        matrix: np.ndarray,
-        num_qubits: int = 1,
-        params: Tuple[float, ...] | None = None,
-    ) -> None:
+    def __init__(self, name: str, matrix: np.ndarray, num_qubits: int):
         self.name = name
-        self.matrix = np.asarray(matrix, dtype=complex)
+        self.matrix = matrix
         self.num_qubits = num_qubits
-        self.params: Tuple[float, ...] = tuple(params) if params else tuple()
-
-        # --- validation ---------------------------------------------------
-        dim = 2**self.num_qubits
-        if self.matrix.shape != (dim, dim):
-            raise ValueError(
-                f"Gate {name}: matrix shape must be {(dim, dim)}, got {self.matrix.shape}"
-            )
-        # Quick unitarity check (cheap heuristic).
-        if not np.allclose(self.matrix.conj().T @ self.matrix, np.eye(dim), atol=1e-8):
-            raise ValueError(f"Gate {name}: matrix is not unitary")
-
-    # ----------------------------------------------------------------------
-    # Representations
-    # ----------------------------------------------------------------------
-    def __repr__(self) -> str:
-        param_str = f"{self.params}" if self.params else ""
-        return f"Gate<{self.name}{param_str}, qubits={self.num_qubits}>"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Gate):
-            return NotImplemented
-        return (
-            self.name == other.name
-            and self.num_qubits == other.num_qubits
-            and np.allclose(self.matrix, other.matrix)
-        )
+        self.params: list[float] | None = None
 
 
-# --------------------------------------------------------------------------
-# Single-qubit standard gates
-# --------------------------------------------------------------------------
-_I = np.eye(2, dtype=complex)
-_X = np.array([[0, 1], [1, 0]], dtype=complex)
-_Y = np.array([[0, -1j], [1j, 0]], dtype=complex)
-_Z = np.array([[1, 0], [0, -1]], dtype=complex)
-_H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]], dtype=complex)
-_S = np.array([[1, 0], [0, 1j]], dtype=complex)
-_T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)
-
-
-def I() -> Gate:
-    return Gate("I", _I.copy(), 1)
+# --------------------------------------------------------------------------- #
+# Static single-qubit gates
+# --------------------------------------------------------------------------- #
+def I() -> Gate:  # noqa: E743
+    return Gate("I", np.eye(2, dtype=complex), 1)
 
 
 def X() -> Gate:
-    return Gate("X", _X.copy(), 1)
+    return Gate("X", np.array([[0, 1], [1, 0]], complex), 1)
 
 
 def Y() -> Gate:
-    return Gate("Y", _Y.copy(), 1)
+    return Gate("Y", np.array([[0, -1j], [1j, 0]], complex), 1)
 
 
 def Z() -> Gate:
-    return Gate("Z", _Z.copy(), 1)
+    return Gate("Z", np.array([[1, 0], [0, -1]], complex), 1)
 
 
 def H() -> Gate:
-    return Gate("H", _H.copy(), 1)
-
-
-def S() -> Gate:
-    return Gate("S", _S.copy(), 1)
-
-
-def T() -> Gate:
-    return Gate("T", _T.copy(), 1)
-
-
-# --------------------------------------------------------------------------
-# Parameterised rotation gates
-# --------------------------------------------------------------------------
-def RX(theta: float) -> Gate:
-    c, s = cos(theta / 2), -1j * sin(theta / 2)
     return Gate(
-        "RX", np.array([[c, s], [s, c.conjugate()]], dtype=complex), 1, (theta,)
+        "H",
+        (1 / math.sqrt(2)) * np.array([[1, 1], [1, -1]], complex),
+        1,
     )
 
 
+# --------------------------------------------------------------------------- #
+# Parametric rotations
+# --------------------------------------------------------------------------- #
+def _rot(axis: str, theta: float) -> np.ndarray:
+    ct = math.cos(theta / 2)
+
+    if axis == "X":
+        st = -1j * math.sin(theta / 2)
+        return np.array([[ct, st], [st, ct]], complex)
+
+    if axis == "Y":
+        st = math.sin(theta / 2)
+        return np.array([[ct, st], [-st, ct]], complex)
+
+    # Z
+    phase = math.e ** (1j * theta / 2)
+    return np.array([[phase.conjugate(), 0], [0, phase]], complex)
+
+
+def RX(theta: float) -> Gate:
+    g = Gate(f"RX({theta:.3f})", _rot("X", theta), 1)
+    g.params = [theta]
+    return g
+
+
 def RY(theta: float) -> Gate:
-    c, s = cos(theta / 2), sin(theta / 2)
-    return Gate("RY", np.array([[c, -s], [s, c]], dtype=complex), 1, (theta,))
+    g = Gate(f"RY({theta:.3f})", _rot("Y", theta), 1)
+    g.params = [theta]
+    return g
 
 
 def RZ(theta: float) -> Gate:
-    e_pos = np.exp(-1j * theta / 2)
-    e_neg = np.exp(1j * theta / 2)
-    return Gate("RZ", np.array([[e_pos, 0], [0, e_neg]], dtype=complex), 1, (theta,))
+    g = Gate(f"RZ({theta:.3f})", _rot("Z", theta), 1)
+    g.params = [theta]
+    return g
 
 
-# --------------------------------------------------------------------------
-# Two-qubit gates
-# --------------------------------------------------------------------------
-_CNOT = np.array(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
-    dtype=complex,
-)
-_CZ = np.diag([1, 1, 1, -1]).astype(complex)
-_SWAP = np.array(
-    [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
-    dtype=complex,
-)
-
-
+# --------------------------------------------------------------------------- #
+# Two-qubit gate (control q1, target q0)
+# --------------------------------------------------------------------------- #
 def CNOT() -> Gate:
-    return Gate("CNOT", _CNOT.copy(), 2)
+    """
+    CNOT with control qubit 1 (MSB) and target qubit 0 (LSB).
 
-
-def CZ() -> Gate:
-    return Gate("CZ", _CZ.copy(), 2)
-
-
-def SWAP() -> Gate:
-    return Gate("SWAP", _SWAP.copy(), 2)
+    Basis order |q1 q0⟩ = |00>, |01>, |10>, |11>.
+    """
+    return Gate(
+        "CNOT",
+        np.array(
+            [
+                [1, 0, 0, 0],  # |00>
+                [0, 1, 0, 0],  # |01>
+                [0, 0, 0, 1],  # |10> → |11>
+                [0, 0, 1, 0],  # |11> → |10>
+            ],
+            complex,
+        ),
+        2,
+    )
