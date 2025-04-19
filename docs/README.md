@@ -89,5 +89,5 @@ Pull requests and issues welcome! Please read `CONTRIBUTING.md` for guidelines.
 
 ## 📄 License
 
-MIT © [amir ewontmiss](https://github.com/amirewontmiss)
+MIT © [amirewontmiss](https://github.com/amirewontmiss)
 
