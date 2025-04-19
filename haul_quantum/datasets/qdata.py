@@ -11,11 +11,14 @@ Provides functions to generate common quantum state datasets:
 """
 
 from __future__ import annotations
+
+from typing import List, Optional, Tuple
+
 import numpy as np
-from typing import List, Tuple, Optional
 
 from ..core.circuit import QuantumCircuit
-from ..core.gates import H, CNOT, X, Z
+from ..core.gates import CNOT, H, X, Z
+
 
 def basis_states(n_qubits: int) -> Tuple[List[QuantumCircuit], np.ndarray]:
     """
@@ -25,7 +28,7 @@ def basis_states(n_qubits: int) -> Tuple[List[QuantumCircuit], np.ndarray]:
         circuits: list of QuantumCircuits preparing |0...0>, |0...1>, ..., |1...1>.
         statevectors: array of shape (2**n, 2**n) where each row is the statevector.
     """
-    dim = 2 ** n_qubits
+    dim = 2**n_qubits
     circuits: List[QuantumCircuit] = []
     svs = np.zeros((dim, dim), dtype=complex)
     for idx in range(dim):
@@ -39,6 +42,7 @@ def basis_states(n_qubits: int) -> Tuple[List[QuantumCircuit], np.ndarray]:
         svs[idx] = vec
     return circuits, svs
 
+
 def ghz_states(n_qubits: int) -> Tuple[List[QuantumCircuit], np.ndarray]:
     """
     Generate GHZ states for n_qubits.
@@ -51,11 +55,12 @@ def ghz_states(n_qubits: int) -> Tuple[List[QuantumCircuit], np.ndarray]:
     qc.add(H(), 0)
     for q in range(n_qubits - 1):
         qc.add(CNOT(), q, q + 1)
-    dim = 2 ** n_qubits
+    dim = 2**n_qubits
     vec = np.zeros(dim, dtype=complex)
     vec[0] = 1 / np.sqrt(2)
     vec[-1] = 1 / np.sqrt(2)
     return [qc], np.array([vec])
+
 
 def bell_states() -> Tuple[List[QuantumCircuit], np.ndarray]:
     """
@@ -85,10 +90,9 @@ def bell_states() -> Tuple[List[QuantumCircuit], np.ndarray]:
     svs = [qc.simulate() for qc in circuits]
     return circuits, np.vstack(svs)
 
+
 def random_pure_states(
-    n_qubits: int,
-    n_samples: int,
-    seed: Optional[int] = None
+    n_qubits: int, n_samples: int, seed: Optional[int] = None
 ) -> np.ndarray:
     """
     Generate random Haar-distributed pure statevectors.
@@ -96,7 +100,7 @@ def random_pure_states(
     Returns:
         statevectors: array of shape (n_samples, 2**n_qubits)
     """
-    dim = 2 ** n_qubits
+    dim = 2**n_qubits
     rng = np.random.default_rng(seed)
     svs = []
     for _ in range(n_samples):
@@ -104,4 +108,3 @@ def random_pure_states(
         vec /= np.linalg.norm(vec)
         svs.append(vec)
     return np.array(svs)
-

@@ -1,3 +1,5 @@
+LICENSE
+pyproject.toml
 setup.py
 haul_quantum/__init__.py
 haul_quantum.egg-info/PKG-INFO

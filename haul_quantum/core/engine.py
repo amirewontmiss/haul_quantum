@@ -5,15 +5,17 @@ High-level engine to orchestrate circuits, simulation, noise, batch runs, and co
 """
 
 from __future__ import annotations
+
 from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 
+from ..sim.batch import BatchSimulator
+from ..sim.noise import NoiseModel
+from ..sim.statevector import StatevectorSimulator
 from .circuit import QuantumCircuit
 from .compiler import CircuitCompiler
-from ..sim.statevector import StatevectorSimulator
-from ..sim.noise import NoiseModel
-from ..sim.batch import BatchSimulator
+
 
 class Engine:
     def __init__(self, n_qubits: int, seed: Optional[int] = None) -> None:
@@ -32,22 +34,27 @@ class Engine:
 
     def x(self, q: int) -> Engine:
         from .gates import X
+
         return self.add(X(), q)
 
     def y(self, q: int) -> Engine:
         from .gates import Y
+
         return self.add(Y(), q)
 
     def z(self, q: int) -> Engine:
         from .gates import Z
+
         return self.add(Z(), q)
 
     def h(self, q: int) -> Engine:
         from .gates import H
+
         return self.add(H(), q)
 
     def cnot(self, ctrl: int, tgt: int) -> Engine:
         from .gates import CNOT
+
         return self.add(CNOT(), ctrl, tgt)
 
     # Pure statevector simulation
@@ -77,7 +84,9 @@ class Engine:
         return state
 
     # Shot-based batch runs
-    def run(self, shots: int = 1024, noise_params: Dict[str, Dict[int, float]] | None = None) -> Dict[str, int]:
+    def run(
+        self, shots: int = 1024, noise_params: Dict[str, Dict[int, float]] | None = None
+    ) -> Dict[str, int]:
         return self.batch_sim.run(self.circuit, shots, noise_params)
 
     # Export circuits
@@ -91,4 +100,3 @@ class Engine:
     def reset(self) -> Engine:
         self.circuit = QuantumCircuit(self.n_qubits)
         return self
-

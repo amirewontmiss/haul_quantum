@@ -10,16 +10,20 @@ Provides:
 """
 
 from __future__ import annotations
+
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
-from typing import Sequence, Tuple, Optional
+
 from haul_quantum.core.gates import Gate
+
 
 class StatevectorSimulator:
     def __init__(self, n_qubits: int):
         if n_qubits <= 0:
             raise ValueError("Number of qubits must be positive")
         self.n_qubits = n_qubits
-        self.dim = 2 ** n_qubits
+        self.dim = 2**n_qubits
 
     def zero_state(self) -> np.ndarray:
         """Return the |0…0> statevector."""
@@ -48,10 +52,7 @@ class StatevectorSimulator:
         return state
 
     def apply_gate(
-        self,
-        state: np.ndarray,
-        gate: Gate,
-        qubits: Sequence[int]
+        self, state: np.ndarray, gate: Gate, qubits: Sequence[int]
     ) -> np.ndarray:
         """Dispatch to single- or two-qubit apply routines."""
         if gate.num_qubits == 1:
@@ -62,10 +63,7 @@ class StatevectorSimulator:
             raise NotImplementedError(f"{gate.num_qubits}-qubit gates not supported")
 
     def _apply_single(
-        self,
-        state: np.ndarray,
-        mat: np.ndarray,
-        target: int
+        self, state: np.ndarray, mat: np.ndarray, target: int
     ) -> np.ndarray:
         # Build full operator by kron’ing across all qubits
         op = 1.0
@@ -74,10 +72,7 @@ class StatevectorSimulator:
         return op @ state
 
     def _apply_two(
-        self,
-        state: np.ndarray,
-        mat: np.ndarray,
-        qubits: Sequence[int]
+        self, state: np.ndarray, mat: np.ndarray, qubits: Sequence[int]
     ) -> np.ndarray:
         q0, q1 = qubits
         if q0 == q1:
@@ -93,4 +88,3 @@ class StatevectorSimulator:
         tensor = tensor.reshape((2,) * self.n_qubits)
         inverse_axes = np.argsort(axes)
         return np.transpose(tensor, inverse_axes).reshape(-1)
-

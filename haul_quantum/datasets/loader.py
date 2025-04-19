@@ -12,18 +12,21 @@ Provides:
 """
 
 from __future__ import annotations
-from typing import Tuple, List, Optional, Union
+
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
-from sklearn.datasets import load_iris, load_digits
+from sklearn.datasets import load_digits, load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 from ..core.circuit import QuantumCircuit
-from ..qnn.encoders import basis_encoding, angle_encoding, amplitude_encoding
+from ..qnn.encoders import amplitude_encoding, angle_encoding, basis_encoding
 
 # ------------------------------------------------------------------------------
 # Classical dataset loaders
 # ------------------------------------------------------------------------------
+
 
 def load_xor() -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -31,14 +34,13 @@ def load_xor() -> Tuple[np.ndarray, np.ndarray]:
       inputs: [[0,0], [0,1], [1,0], [1,1]]
       labels: [0, 1, 1, 0]
     """
-    X = np.array([[0,0], [0,1], [1,0], [1,1]], dtype=int)
-    y = np.array([0,1,1,0], dtype=int)
+    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=int)
+    y = np.array([0, 1, 1, 0], dtype=int)
     return X, y
 
 
 def load_iris_data(
-    test_size: float = 0.3,
-    random_state: Optional[int] = None
+    test_size: float = 0.3, random_state: Optional[int] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load Iris dataset and split into train/test.
@@ -56,10 +58,10 @@ def load_iris_data(
 
 
 def load_mnist_data(
-    digits: Union[List[int], Tuple[int, ...]] = (0,1),
+    digits: Union[List[int], Tuple[int, ...]] = (0, 1),
     n_samples: Optional[int] = None,
     test_size: float = 0.2,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load MNIST-like digit data from sklearn (8x8 images).
@@ -98,13 +100,10 @@ def load_mnist_data(
 # Quantum dataset preparation
 # ------------------------------------------------------------------------------
 
+
 def prepare_quantum_dataset(
-    X: np.ndarray,
-    encoding: Literal["basis", "angle", "amplitude"] = "angle"
-) -> Tuple[
-    List[Union[QuantumCircuit, np.ndarray]],
-    np.ndarray
-]:
+    X: np.ndarray, encoding: Literal["basis", "angle", "amplitude"] = "angle"
+) -> Tuple[List[Union[QuantumCircuit, np.ndarray]], np.ndarray]:
     """
     Convert classical feature matrix X to quantum inputs.
 
@@ -155,7 +154,6 @@ if __name__ == "__main__":
     print("Iris train circuits:", len(circ_train))
 
     # MNIST (0 vs 1)
-    X_train, X_test, y_train, y_test = load_mnist_data(digits=(0,1), n_samples=200)
+    X_train, X_test, y_train, y_test = load_mnist_data(digits=(0, 1), n_samples=200)
     circ_train = prepare_quantum_dataset(X_train, encoding="angle")
     print("MNIST train circuits:", len(circ_train))
-

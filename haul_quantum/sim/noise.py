@@ -15,11 +15,14 @@ over noise realizations to approximate density-matrix behavior.
 """
 
 from __future__ import annotations
-import numpy as np
-from typing import Sequence, Optional
 
-from .statevector import StatevectorSimulator
+from typing import Optional, Sequence
+
+import numpy as np
+
 from ..core.gates import Gate, X, Y, Z
+from .statevector import StatevectorSimulator
+
 
 class NoiseModel:
     def __init__(self, n_qubits: int, seed: Optional[int] = None) -> None:
@@ -48,7 +51,9 @@ class NoiseModel:
             return self.sim.apply_gate(state, error_gate, [qubit])
         return state
 
-    def amplitude_damping(self, state: np.ndarray, gamma: float, qubit: int) -> np.ndarray:
+    def amplitude_damping(
+        self, state: np.ndarray, gamma: float, qubit: int
+    ) -> np.ndarray:
         """Simulate single-qubit amplitude damping on `qubit` with strength gamma."""
         # Quantum-jump approach: jump with probability gamma
         if self.rng.random() < gamma:
@@ -65,5 +70,6 @@ class NoiseModel:
         else:
             # no-jump: apply non-unitary damping on |1> amplitude
             mat = np.array([[1, 0], [0, np.sqrt(1 - gamma)]], dtype=complex)
-            return self.sim.apply_gate(state, Gate("AD_no_jump", mat, num_qubits=1), [qubit])
-
+            return self.sim.apply_gate(
+                state, Gate("AD_no_jump", mat, num_qubits=1), [qubit]
+            )

@@ -14,6 +14,7 @@ Classifier: Operating System :: OS Independent
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: numpy>=1.20
 Requires-Dist: matplotlib>=3.0
 Requires-Dist: scikit-learn>=0.24
@@ -24,6 +25,7 @@ Dynamic: classifier
 Dynamic: description
 Dynamic: description-content-type
 Dynamic: home-page
+Dynamic: license-file
 Dynamic: project-url
 Dynamic: requires-dist
 Dynamic: requires-python

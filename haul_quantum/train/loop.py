@@ -18,13 +18,15 @@ Key classes:
 - Trainer (orchestrates the training process)
 """
 
+import logging
 import os
 import time
-import logging
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
-from typing import Callable, List, Optional, Dict, Any
 
 from .optimizer import Optimizer
+
 
 # ----------------------------------
 # Callback mechanism
@@ -58,12 +60,13 @@ class EarlyStopping(Callback):
         min_delta: minimum change to qualify as improvement.
         mode: 'min' or 'max' depending on whether lower or higher is better.
     """
+
     def __init__(
         self,
-        monitor: str = 'loss',
+        monitor: str = "loss",
         patience: int = 10,
         min_delta: float = 0.0,
-        mode: str = 'min'
+        mode: str = "min",
     ):
         self.monitor = monitor
         self.patience = patience
@@ -79,7 +82,11 @@ class EarlyStopping(Callback):
             return
         if self.best is None:
             self.best = current
-        improvement = (current < self.best - self.min_delta) if self.mode == 'min' else (current > self.best + self.min_delta)
+        improvement = (
+            (current < self.best - self.min_delta)
+            if self.mode == "min"
+            else (current > self.best + self.min_delta)
+        )
         if improvement:
             self.best = current
             self.wait = 0
@@ -87,7 +94,7 @@ class EarlyStopping(Callback):
             self.wait += 1
             if self.wait >= self.patience:
                 self.stopped_epoch = epoch
-                logs['stop_training'] = True
+                logs["stop_training"] = True
 
 
 class ModelCheckpoint(Callback):
@@ -100,12 +107,13 @@ class ModelCheckpoint(Callback):
         save_best_only: if True, only save when monitored metric improves
         mode: 'min' or 'max'
     """
+
     def __init__(
         self,
         filepath: str,
-        monitor: str = 'loss',
+        monitor: str = "loss",
         save_best_only: bool = False,
-        mode: str = 'min'
+        mode: str = "min",
     ):
         self.filepath = filepath
         self.monitor = monitor
@@ -119,7 +127,7 @@ class ModelCheckpoint(Callback):
             return
         if not self.save_best_only or self._is_improvement(current):
             path = self.filepath.format(epoch=epoch, **logs)
-            params = logs.get('params')
+            params = logs.get("params")
             if params is not None:
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 np.savez(path, params=params)
@@ -129,7 +137,9 @@ class ModelCheckpoint(Callback):
         if self.best is None:
             self.best = current
             return True
-        is_better = (current < self.best) if self.mode == 'min' else (current > self.best)
+        is_better = (
+            (current < self.best) if self.mode == "min" else (current > self.best)
+        )
         if is_better:
             self.best = current
         return is_better
@@ -143,16 +153,17 @@ class CSVLogger(Callback):
         filename: CSV file path
         fields: list of field names (columns) to log
     """
+
     def __init__(self, filename: str, fields: List[str]):
         self.filename = filename
         self.fields = fields
-        self.file = open(self.filename, 'w', buffering=1)
-        header = ','.join(fields)
-        self.file.write(header + '\n')
+        self.file = open(self.filename, "w", buffering=1)
+        header = ",".join(fields)
+        self.file.write(header + "\n")
 
     def on_epoch_end(self, epoch: int, logs: Dict[str, Any]) -> None:
-        row = [str(logs.get(f, '')) for f in self.fields]
-        self.file.write(','.join(row) + '\n')
+        row = [str(logs.get(f, "")) for f in self.fields]
+        self.file.write(",".join(row) + "\n")
 
     def on_train_end(self, logs: Dict[str, Any]) -> None:
         self.file.close()
@@ -166,6 +177,7 @@ class ProgressBar(Callback):
         total_epochs: number of epochs
         steps_per_epoch: number of steps (batches) per epoch
     """
+
     def __init__(self, total_epochs: int, steps_per_epoch: int = 1):
         self.total_epochs = total_epochs
         self.steps_per_epoch = steps_per_epoch
@@ -174,7 +186,10 @@ class ProgressBar(Callback):
         print(f"Epoch {epoch+1}/{self.total_epochs}")
 
     def on_step_end(self, epoch: int, step: int, logs: Dict[str, Any]) -> None:
-        print(f"\r [Step {step+1}/{self.steps_per_epoch}] loss={logs.get('loss', 0):.6f}", end='')
+        print(
+            f"\r [Step {step+1}/{self.steps_per_epoch}] loss={logs.get('loss', 0):.6f}",
+            end="",
+        )
 
     def on_epoch_end(self, epoch: int, logs: Dict[str, Any]) -> None:
         print()
@@ -197,6 +212,7 @@ class Trainer:
         tol: tolerance for early stopping based on parameter change
         callbacks: list of Callback instances
     """
+
     def __init__(
         self,
         model_fn: Callable[[np.ndarray], Any],
@@ -206,7 +222,7 @@ class Trainer:
         gradient_fn: Callable[[np.ndarray], np.ndarray],
         max_epochs: int = 100,
         tol: float = 1e-6,
-        callbacks: Optional[List[Callback]] = None
+        callbacks: Optional[List[Callback]] = None,
     ):
         self.model_fn = model_fn
         self.params = initial_params.astype(float)
@@ -230,8 +246,8 @@ class Trainer:
             # forward
             output = self.model_fn(self.params)
             loss = self.loss_fn(output)
-            logs['loss'] = loss
-            logs['params'] = self.params.copy()
+            logs["loss"] = loss
+            logs["params"] = self.params.copy()
 
             # backward
             grads = self.gradient_fn(self.params)
@@ -246,13 +262,15 @@ class Trainer:
                 cb.on_epoch_end(epoch, logs)
 
             # check early stopping flag
-            if logs.get('stop_training'):
+            if logs.get("stop_training"):
                 logging.info(f"Stopping at epoch {epoch} by callback request")
                 break
 
             # parameter change tolerance
             if np.linalg.norm(self.params - prev_params) < self.tol:
-                logging.info(f"Parameter change below tol={self.tol}, stopping at epoch {epoch}")
+                logging.info(
+                    f"Parameter change below tol={self.tol}, stopping at epoch {epoch}"
+                )
                 break
 
             prev_params = self.params.copy()
@@ -260,4 +278,3 @@ class Trainer:
         for cb in self.callbacks:
             cb.on_train_end(logs)
         return self.params
-

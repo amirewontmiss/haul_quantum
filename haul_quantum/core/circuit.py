@@ -9,11 +9,12 @@ Conventions:
 """
 
 from __future__ import annotations
-from typing import List, Sequence, Tuple, Optional
+
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .gates import Gate, CNOT
+from .gates import CNOT, Gate
 
 __all__ = ["QuantumCircuit"]
 
@@ -45,18 +46,35 @@ class QuantumCircuit:
         return self  # enable chaining
 
     # one-liners for common gates
-    def x(self, q: int):          from .gates import X;  return self.add(X(),  q)
-    def y(self, q: int):          from .gates import Y;  return self.add(Y(),  q)
-    def z(self, q: int):          from .gates import Z;  return self.add(Z(),  q)
-    def h(self, q: int):          from .gates import H;  return self.add(H(),  q)
-    def cnot(self, c: int, t: int):                         return self.add(CNOT(), c, t)
+    def x(self, q: int):
+        from .gates import X
+
+        return self.add(X(), q)
+
+    def y(self, q: int):
+        from .gates import Y
+
+        return self.add(Y(), q)
+
+    def z(self, q: int):
+        from .gates import Z
+
+        return self.add(Z(), q)
+
+    def h(self, q: int):
+        from .gates import H
+
+        return self.add(H(), q)
+
+    def cnot(self, c: int, t: int):
+        return self.add(CNOT(), c, t)
 
     # ----------------------------------------------------------------------
     # Simulation
     # ----------------------------------------------------------------------
     def simulate(self, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
         """Return final state-vector after applying all gates."""
-        dim = 2 ** self.n_qubits
+        dim = 2**self.n_qubits
         state = (
             initial_state.astype(complex, copy=True)
             if initial_state is not None
@@ -81,9 +99,7 @@ class QuantumCircuit:
             return self._apply_two(state, gate.matrix, qubits)
         raise NotImplementedError(">2-qubit gates not yet supported")
 
-    def _apply_single(
-        self, state: np.ndarray, mat: np.ndarray, q: int
-    ) -> np.ndarray:
+    def _apply_single(self, state: np.ndarray, mat: np.ndarray, q: int) -> np.ndarray:
         op = 1.0
         # tensor product from MSB to LSB
         for i in range(self.n_qubits - 1, -1, -1):
@@ -103,7 +119,8 @@ class QuantumCircuit:
 
         # move affected qubits to the end
         axes = list(range(n))
-        axes.remove(q0); axes.remove(q1)
+        axes.remove(q0)
+        axes.remove(q1)
         axes.extend([q0, q1])
 
         tensor = np.transpose(tensor, axes).reshape(-1, 4)
@@ -118,9 +135,10 @@ class QuantumCircuit:
     # Introspection
     # ----------------------------------------------------------------------
     def __repr__(self) -> str:
-        header = f"QuantumCircuit(n_qubits={self.n_qubits}, depth={len(self.instructions)})"
+        header = (
+            f"QuantumCircuit(n_qubits={self.n_qubits}, depth={len(self.instructions)})"
+        )
         lines = [header]
         for idx, (gate, qs) in enumerate(self.instructions):
             lines.append(f"  {idx:>3}: {gate} @ {qs}")
         return "\n".join(lines)
-

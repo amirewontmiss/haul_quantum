@@ -8,13 +8,16 @@ then measures the final state in the computational basis to build a histogram.
 """
 
 from __future__ import annotations
-import numpy as np
+
 from typing import Dict, Sequence
 
-from .statevector import StatevectorSimulator
-from .noise import NoiseModel
+import numpy as np
+
 from ..core.circuit import QuantumCircuit
 from ..core.gates import Gate
+from .noise import NoiseModel
+from .statevector import StatevectorSimulator
+
 
 class BatchSimulator:
     def __init__(self, n_qubits: int, seed: int | None = None) -> None:
@@ -33,7 +36,7 @@ class BatchSimulator:
         self,
         circuit: QuantumCircuit,
         shots: int = 1024,
-        noise_params: Dict[str, Dict[int, float]] | None = None
+        noise_params: Dict[str, Dict[int, float]] | None = None,
     ) -> Dict[str, int]:
         """
         Execute `shots` trajectories of `circuit` with optional noise, then measure.
@@ -46,7 +49,7 @@ class BatchSimulator:
             e.g. {"depolarizing": {0:0.01, 1:0.02}, "bit_flip": {0:0.005}}
         :returns: histogram mapping bit-string → count
         """
-        hist: Dict[str,int] = {}
+        hist: Dict[str, int] = {}
 
         for _ in range(shots):
             # start in |0…0>
@@ -68,10 +71,9 @@ class BatchSimulator:
                                 state = channel(state, p, q)
 
             # measure once
-            probs = np.abs(state)**2
+            probs = np.abs(state) ** 2
             idx = self.rng.choice(len(probs), p=probs)
             bitstr = format(idx, f"0{self.n_qubits}b")
             hist[bitstr] = hist.get(bitstr, 0) + 1
 
         return hist
-

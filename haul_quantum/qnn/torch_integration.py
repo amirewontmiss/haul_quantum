@@ -8,10 +8,11 @@ Provides:
     producing ⟨Z⟩ expectation values as a differentiable layer
 """
 
+from typing import Callable
+
+import numpy as np
 import torch
 from torch.autograd import Function
-import numpy as np
-from typing import Callable
 
 from ..core.engine import Engine
 from .layers import VQCLayer
@@ -22,7 +23,7 @@ class QNodeFunction(Function):
     Autograd Function implementing the parameter-shift rule.
 
     forward:
-      inputs: 
+      inputs:
         - params: torch.Tensor of shape (num_parameters,)
         - circuit_fn: Callable[[Engine, np.ndarray], np.ndarray]
         - engine: Engine
@@ -62,8 +63,10 @@ class QNodeFunction(Function):
         # compute f(θ+shift) and f(θ-shift)
         grads = np.zeros((num_p, *ctx.exp_shape), dtype=float)
         for i in range(num_p):
-            plus = orig.copy();  plus[i] += shift
-            minus = orig.copy(); minus[i] -= shift
+            plus = orig.copy()
+            plus[i] += shift
+            minus = orig.copy()
+            minus[i] -= shift
             f_plus = circuit_fn(engine, plus)
             f_minus = circuit_fn(engine, minus)
             grads[i] = 0.5 * (f_plus - f_minus)
@@ -71,11 +74,16 @@ class QNodeFunction(Function):
         # chain rule with incoming gradient
         grad_out_np = grad_output.detach().cpu().numpy()
         # if exp_shape is vector, tensordot over axis 1
-        grad_params = np.tensordot(grads, grad_out_np, axes=([1], [0])) \
-            if grads.ndim > 1 else grads * grad_out_np
+        grad_params = (
+            np.tensordot(grads, grad_out_np, axes=([1], [0]))
+            if grads.ndim > 1
+            else grads * grad_out_np
+        )
 
         # back to torch
-        grad_params_tensor = torch.from_numpy(grad_params).to(grad_output.device).to(grad_output.dtype)
+        grad_params_tensor = (
+            torch.from_numpy(grad_params).to(grad_output.device).to(grad_output.dtype)
+        )
         # no grads for circuit_fn or engine
         return grad_params_tensor, None, None
 
@@ -104,12 +112,14 @@ class TorchQuantumLayer(torch.nn.Module):
             state = qc.simulate()
             # measure ⟨Z⟩ on each qubit
             probs = np.abs(state) ** 2
-            exps = np.array([
-                sum(((1 - 2 * ((idx >> q) & 1)) * p) for idx, p in enumerate(probs))
-                for q in range(self.n_qubits)
-            ], dtype=float)
+            exps = np.array(
+                [
+                    sum(((1 - 2 * ((idx >> q) & 1)) * p) for idx, p in enumerate(probs))
+                    for q in range(self.n_qubits)
+                ],
+                dtype=float,
+            )
             return exps
 
         # call custom autograd function
         return QNodeFunction.apply(self.params, circuit_fn, self.engine)
-

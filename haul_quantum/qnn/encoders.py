@@ -10,11 +10,14 @@ Provides:
 """
 
 from __future__ import annotations
-from typing import Sequence, Literal
+
+from typing import Literal, Sequence
+
 import numpy as np
 
 from ..core.circuit import QuantumCircuit
-from ..core.gates import X, RX, RY, RZ
+from ..core.gates import RX, RY, RZ, X
+
 
 def basis_encoding(bits: Sequence[int]) -> QuantumCircuit:
     """
@@ -32,9 +35,9 @@ def basis_encoding(bits: Sequence[int]) -> QuantumCircuit:
             qc.add(X(), q)
     return qc
 
+
 def angle_encoding(
-    values: Sequence[float],
-    rotation: Literal["X", "Y", "Z"] = "Y"
+    values: Sequence[float], rotation: Literal["X", "Y", "Z"] = "Y"
 ) -> QuantumCircuit:
     """
     Encode a real-valued vector into qubit rotations.
@@ -56,6 +59,7 @@ def angle_encoding(
             raise ValueError("rotation must be 'X', 'Y', or 'Z'")
     return qc
 
+
 def amplitude_encoding(state_vector: Sequence[complex]) -> np.ndarray:
     """
     Prepare a normalized statevector for amplitude encoding.
@@ -73,4 +77,3 @@ def amplitude_encoding(state_vector: Sequence[complex]) -> np.ndarray:
     if norm == 0:
         raise ValueError("Cannot encode zero vector")
     return arr / norm
-

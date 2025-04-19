@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
 import os
+
+from setuptools import find_packages, setup
 
 # Read the long description from README.md
 this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -35,4 +36,3 @@ setup(
         "Tracker": "https://github.com/yourusername/haul_quantum/issues",
     },
 )
-

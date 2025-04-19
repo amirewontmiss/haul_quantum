@@ -10,6 +10,7 @@ Defines:
 """
 
 from __future__ import annotations
+
 from math import cos, sin
 from typing import Tuple
 
@@ -18,9 +19,20 @@ import numpy as np
 __all__ = [
     "Gate",
     # single-qubit factories
-    "I", "X", "Y", "Z", "H", "S", "T", "RX", "RY", "RZ",
+    "I",
+    "X",
+    "Y",
+    "Z",
+    "H",
+    "S",
+    "T",
+    "RX",
+    "RY",
+    "RZ",
     # two-qubit factories
-    "CNOT", "CZ", "SWAP",
+    "CNOT",
+    "CZ",
+    "SWAP",
 ]
 
 
@@ -40,7 +52,7 @@ class Gate:
         self.params: Tuple[float, ...] = tuple(params) if params else tuple()
 
         # --- validation ---------------------------------------------------
-        dim = 2 ** self.num_qubits
+        dim = 2**self.num_qubits
         if self.matrix.shape != (dim, dim):
             raise ValueError(
                 f"Gate {name}: matrix shape must be {(dim, dim)}, got {self.matrix.shape}"
@@ -78,20 +90,42 @@ _S = np.array([[1, 0], [0, 1j]], dtype=complex)
 _T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)
 
 
-def I() -> Gate:   return Gate("I", _I.copy(), 1)
-def X() -> Gate:   return Gate("X", _X.copy(), 1)
-def Y() -> Gate:   return Gate("Y", _Y.copy(), 1)
-def Z() -> Gate:   return Gate("Z", _Z.copy(), 1)
-def H() -> Gate:   return Gate("H", _H.copy(), 1)
-def S() -> Gate:   return Gate("S", _S.copy(), 1)
-def T() -> Gate:   return Gate("T", _T.copy(), 1)
+def I() -> Gate:
+    return Gate("I", _I.copy(), 1)
+
+
+def X() -> Gate:
+    return Gate("X", _X.copy(), 1)
+
+
+def Y() -> Gate:
+    return Gate("Y", _Y.copy(), 1)
+
+
+def Z() -> Gate:
+    return Gate("Z", _Z.copy(), 1)
+
+
+def H() -> Gate:
+    return Gate("H", _H.copy(), 1)
+
+
+def S() -> Gate:
+    return Gate("S", _S.copy(), 1)
+
+
+def T() -> Gate:
+    return Gate("T", _T.copy(), 1)
+
 
 # --------------------------------------------------------------------------
 # Parameterised rotation gates
 # --------------------------------------------------------------------------
 def RX(theta: float) -> Gate:
     c, s = cos(theta / 2), -1j * sin(theta / 2)
-    return Gate("RX", np.array([[c, s], [s, c.conjugate()]], dtype=complex), 1, (theta,))
+    return Gate(
+        "RX", np.array([[c, s], [s, c.conjugate()]], dtype=complex), 1, (theta,)
+    )
 
 
 def RY(theta: float) -> Gate:
@@ -109,22 +143,23 @@ def RZ(theta: float) -> Gate:
 # Two-qubit gates
 # --------------------------------------------------------------------------
 _CNOT = np.array(
-    [[1, 0, 0, 0],
-     [0, 1, 0, 0],
-     [0, 0, 0, 1],
-     [0, 0, 1, 0]],
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
     dtype=complex,
 )
-_CZ   = np.diag([1, 1, 1, -1]).astype(complex)
+_CZ = np.diag([1, 1, 1, -1]).astype(complex)
 _SWAP = np.array(
-    [[1, 0, 0, 0],
-     [0, 0, 1, 0],
-     [0, 1, 0, 0],
-     [0, 0, 0, 1]],
+    [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
     dtype=complex,
 )
 
-def CNOT() -> Gate: return Gate("CNOT", _CNOT.copy(), 2)
-def CZ()   -> Gate: return Gate("CZ",   _CZ.copy(),   2)
-def SWAP() -> Gate: return Gate("SWAP", _SWAP.copy(), 2)
 
+def CNOT() -> Gate:
+    return Gate("CNOT", _CNOT.copy(), 2)
+
+
+def CZ() -> Gate:
+    return Gate("CZ", _CZ.copy(), 2)
+
+
+def SWAP() -> Gate:
+    return Gate("SWAP", _SWAP.copy(), 2)

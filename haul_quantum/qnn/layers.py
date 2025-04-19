@@ -9,12 +9,14 @@ Provides:
 """
 
 from __future__ import annotations
+
 from typing import Sequence
 
 import numpy as np
 
 from ..core.circuit import QuantumCircuit
-from ..core.gates import RX, RY, RZ, CNOT
+from ..core.gates import CNOT, RX, RY, RZ
+
 
 class VQCLayer:
     """
@@ -41,16 +43,21 @@ class VQCLayer:
         :param params: length must equal self.num_parameters
         """
         if len(params) != self.num_parameters:
-            raise ValueError(f"Expected {self.num_parameters} params, got {len(params)}")
+            raise ValueError(
+                f"Expected {self.num_parameters} params, got {len(params)}"
+            )
 
         qc = QuantumCircuit(self.n_qubits)
         idx = 0
         for _ in range(self.n_layers):
             # single-qubit rotations
             for q in range(self.n_qubits):
-                qc.add(RX(params[idx]), q);   idx += 1
-                qc.add(RY(params[idx]), q);   idx += 1
-                qc.add(RZ(params[idx]), q);   idx += 1
+                qc.add(RX(params[idx]), q)
+                idx += 1
+                qc.add(RY(params[idx]), q)
+                idx += 1
+                qc.add(RZ(params[idx]), q)
+                idx += 1
             # entangling ring
             for q in range(self.n_qubits - 1):
                 qc.cnot(q, q + 1)
@@ -58,7 +65,9 @@ class VQCLayer:
             qc.cnot(self.n_qubits - 1, 0)
         return qc
 
-    def forward(self, params: Sequence[float], initial_state: np.ndarray | None = None) -> np.ndarray:
+    def forward(
+        self, params: Sequence[float], initial_state: np.ndarray | None = None
+    ) -> np.ndarray:
         """
         Simulate the circuit produced by `build_circuit` and return final statevector.
 
@@ -67,4 +76,3 @@ class VQCLayer:
         """
         qc = self.build_circuit(params)
         return qc.simulate(initial_state)
-

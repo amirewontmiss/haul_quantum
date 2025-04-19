@@ -1,6 +1,8 @@
 import numpy as np
+
 from haul_quantum.core.circuit import QuantumCircuit
 from haul_quantum.sim.batch import BatchSimulator
+
 
 def test_batch_histogram():
     qc = QuantumCircuit(1)  # identity circuit
@@ -9,4 +11,3 @@ def test_batch_histogram():
     assert sum(hist.values()) == 100
     # Only '0' outcome possible for |0>
     assert set(hist.keys()) == {"0"}
-

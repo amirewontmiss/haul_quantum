@@ -9,11 +9,14 @@ Functions:
 """
 
 from __future__ import annotations
+
 from typing import Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from ..core.circuit import QuantumCircuit
+
 
 def draw_ascii(circuit: QuantumCircuit) -> str:
     """
@@ -35,9 +38,9 @@ def draw_ascii(circuit: QuantumCircuit) -> str:
                 rows[q] += " --- -"
     return "\n".join(rows)
 
+
 def plot_circuit(
-    circuit: QuantumCircuit,
-    figsize: Tuple[float, float] = (6, 2)
+    circuit: QuantumCircuit, figsize: Tuple[float, float] = (6, 2)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot a simple circuit diagram with wires and gate boxes.
@@ -56,8 +59,9 @@ def plot_circuit(
         for q in qubits:
             y = n - 1 - q
             # draw gate box
-            rect = plt.Rectangle((idx - 0.3, y - 0.3), 0.6, 0.6,
-                                 facecolor="white", edgecolor="black")
+            rect = plt.Rectangle(
+                (idx - 0.3, y - 0.3), 0.6, 0.6, facecolor="white", edgecolor="black"
+            )
             ax.add_patch(rect)
             ax.text(idx, y, gate.name, ha="center", va="center")
         # draw control-target lines for 2-qubit gates
@@ -65,12 +69,16 @@ def plot_circuit(
             q0, q1 = qubits
             y0 = n - 1 - q0
             y1 = n - 1 - q1
-            ax.vlines(x=idx, ymin=min(y0, y1), ymax=max(y0, y1),
-                      color="black", linestyle="dotted")
-            ax.plot(idx, y0, 'o', color="black")
-            ax.plot(idx, y1, 'o', color="black")
+            ax.vlines(
+                x=idx,
+                ymin=min(y0, y1),
+                ymax=max(y0, y1),
+                color="black",
+                linestyle="dotted",
+            )
+            ax.plot(idx, y0, "o", color="black")
+            ax.plot(idx, y1, "o", color="black")
     ax.set_xlim(-0.5, len(inst) - 0.5)
     ax.set_ylim(-1, n)
     ax.axis("off")
     return fig, ax
-
