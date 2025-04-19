@@ -1,153 +1,93 @@
-# Haul Quantum AI Framework
+# Haul Quantum
 
-[![CI](https://github.com/amirewontmiss/haul_quantum/actions/workflows/ci.yml/badge.svg)](https://github.com/amirewontmiss/haul_quantum/actions) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/haul-quantum.svg)](https://pypi.org/project/haul-quantum)
+[![Python versions](https://img.shields.io/pypi/pyversions/haul-quantum.svg)](https://pypi.org/project/haul-quantum)
+[![License](https://img.shields.io/github/license/amirewontmiss/haul_quantum.svg)](LICENSE)
 
-**Haul** is a modular, extensible, hardware-agnostic quantum-classical AI framework. It brings together circuit construction, statevector & noise simulation, hybrid quantum-neural-network layers, training utilities, datasets, and visualization into a single, easy-to-use Python package.
+A lightweight, extensible **quantum computing framework** for Python, designed for research and prototyping. Haul Quantum provides:
 
----
-
-## 🚀 Features
-
-* **Core abstractions**
-  – `Gate`, `QuantumCircuit`, chainable builder API
-* **Simulators**
-  – CPU statevector, Monte Carlo noise channels, shot-based batch simulator
-* **Compiler & IR**
-  – Export to OpenQASM 2.0 & JSON intermediate representation
-* **QNN & ML integration**
-  – Variational layers (`VQCLayer`), encoders (basis/angle/amplitude), PyTorch QNode support
-* **Training utilities**
-  – Generic `Trainer`, callbacks (early stopping, checkpointing, CSV logger, progress bar), built-in optimizers
-* **Datasets**
-  – Classical (XOR, Iris, MNIST) & quantum (basis, GHZ, Bell, random Haar states)
-* **Visualization**
-  – ASCII & Matplotlib circuit diagrams, VQC architecture schematics, Bloch sphere plots
+* **Pure-Python simulation** with statevector backends.
+* **Fluent API** via `Engine` or direct `QuantumCircuit`.
+* **Chainable gates**: `H`, `X`, `CNOT`, `RX`, `RY`, `RZ`, and more.
+* **Noise modeling** and batch simulation support.
+* **Torch integration** for hybrid quantum-classical neural nets.
 
 ---
 
-## 📦 Installation
+## 🚀 Installation
 
 ```bash
-# From PyPI (coming soon):
-pip install haul_quantum
-
-# Or install latest from GitHub:
-git clone https://github.com/amirewontmiss/haul_quantum.git
-cd haul_quantum
-pip install -e .
+pip install haul-quantum
 ```
 
-> **Note:** it’s best practice to use a virtual environment.
+Or install the latest development build:
 
----
+```bash
+git clone https://github.com/amirewontmiss/haul_quantum.git
+cd haul_quantum
+pip install -e .[dev]
+```
 
-## 🏁 Quickstart
+## 🎯 Quick Start
 
-### Build & simulate a Bell state
+### Using the Engine
 
 ```python
 from haul_quantum.core.engine import Engine
 
-# Create a 2-qubit engine
-eng = Engine(n_qubits=2, seed=123)
+# Create a 2-qubit circuit, build a Bell state:
+eng = Engine(2)
+out = eng.h(0).cnot(0,1).simulate()
+print(out)  # [0.707+0j, 0.707+0j, 0+0j, 0+0j]
 
-# Build a Bell circuit
-eng.h(0).cnot(0, 1)
-
-# Pure statevector simulation
-state = eng.simulate()
-print("Bell statevector:", state)
+# Measure probabilities:
+probs = eng.measure()
+print(probs)  # {'00': 0.5, '01': 0.5}
 ```
 
-### Export to QASM
+### Direct Circuit API
 
 ```python
-qasm = eng.to_qasm()
-print(qasm)
+from haul_quantum.core.circuit import QuantumCircuit
+from haul_quantum.core.gates import RX, H, CNOT
+
+qc = QuantumCircuit(3)
+qc.h(0).rx(1.23)(1).cnot(0,2)
+state = qc.simulate()
 ```
 
-### Variational Quantum Circuit (VQC) training
+## 📚 API Reference
 
-```python
-import numpy as np
-from haul_quantum.qnn.layers import VQCLayer
-from haul_quantum.datasets.loader import load_xor, prepare_quantum_dataset
-from haul_quantum.train.loop import Trainer
-from haul_quantum.train.optimizer import GradientDescent
+### `Engine`
 
-# Load XOR data and prepare circuits
-X, y = load_xor()
-circuits = prepare_quantum_dataset(X, encoding="basis")
+| Method            | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `Engine(n, seed)` | Create engine with *n* qubits, optional RNG seed. |
+| `h(q)`            | Apply Hadamard on qubit *q*. Returns self.        |
+| `x(q)`            | Apply Pauli-X on qubit *q*. Returns self.         |
+| `cnot(ctrl, tgt)` | Controlled-NOT (control & target) on two qubits.  |
+| `rx(theta)(q)`    | Rotation-X by *theta* on qubit *q*.               |
+| `simulate()`      | Return full statevector as a NumPy array.         |
+| `measure()`       | Return a dict of basis-state probabilities.       |
+| `to_qasm()`       | Export to OpenQASM 2.0 string.                    |
+| `reset()`         | Clear all gates, preserve qubit count & seed.     |
 
-# Build a 2-qubit, 1-layer VQC
-vqc = VQCLayer(n_qubits=2, n_layers=1)
-params = np.random.uniform(0, 2*np.pi, vqc.num_parameters)
+### `QuantumCircuit`
 
-# Define model, loss, gradient functions
-def model_fn(p):
-    qc = vqc.build_circuit(p)
-    state = qc.simulate()
-    probs = np.abs(state)**2
-    return probs[0] + probs[1] - probs[2] - probs[3]
+Same API as `Engine`, but stateless. Useful for circuit transformations, compilation, and exporting without an `Engine` wrapper.
 
-def loss_fn(pred):
-    y_enc = 2*y - 1
-    return float(np.mean((pred - y_enc)**2))
+## 🔌 Features
 
-def grad_fn(p):
-    eps = 1e-3
-    grads = np.zeros_like(p)
-    base = loss_fn(model_fn(p))
-    for i in range(len(p)):
-        dp = np.zeros_like(p); dp[i] = eps
-        grads[i] = (loss_fn(model_fn(p+dp)) - loss_fn(model_fn(p-dp))) / (2*eps)
-    return grads
+* **Statevector simulator:** Pure NumPy backend, no external dependencies.
+* **NoiseModel:** Apply `bit_flip`, `phase_flip`, `depolarizing` channels.
+* **Batch simulation:** Collect histograms over many shots.
+* **Torch integration:** Wrap circuits as `torch.nn.Module` for hybrid training.
 
-trainer = Trainer(
-    model_fn=model_fn,
-    initial_params=params,
-    loss_fn=loss_fn,
-    optimizer=GradientDescent(learning_rate=0.1),
-    gradient_fn=grad_fn,
-    max_epochs=50,
-    callbacks=[]
-)
-trained = trainer.fit()
-print("Trained parameters:", trained)
-```
+## 🖋️ Contributing
 
----
+Pull requests and issues welcome! Please read `CONTRIBUTING.md` for guidelines.
 
-## 📚 Documentation & Examples
+## 📄 License
 
-* Full API docs and tutorials in [`docs/README.md`](docs/README.md)
-* Example scripts in [`haul_quantum/experiments`](haul_quantum/experiments)
+MIT © [amir ewontmiss](https://github.com/amirewontmiss)
 
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please read our:
-
-* [Code of Conduct](CODE_OF_CONDUCT.md)
-* [Contributing Guidelines](CONTRIBUTING.md)
-
-Then:
-
-```bash
-git clone https://github.com/amirewontmiss/haul_quantum.git
-cd haul_quantum
-pip install -e .
-pre-commit install
-pre-commit run --all-files
-```
-
----
-
-## ⚖️ License
-
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
-
----
-
-*Built with ♥ for the quantum-machine learning community.*
