@@ -151,4 +151,3 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 ---
 
 *Built with ♥ for the quantum-machine learning community.*
-
